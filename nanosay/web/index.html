@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>nanoSay — have anything read out loud</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔊</text></svg>">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark">🔊</div>
+    <div>
+      <div class="brand-name">nanoSay</div>
+      <div class="brand-sub">Have anything read out loud, by your own computer</div>
+    </div>
+  </div>
+  <div class="grow"></div>
+  <span class="pill" id="voicePill">looking…</span>
+  <button class="btn ghost small" id="lookBtn">Look again</button>
+  <button class="btn ghost small" id="settingsBtn">⚙︎</button>
+</header>
+
+<nav class="steps" id="steps">
+  <button class="step" data-step="give"><span>1</span> Give it something</button>
+  <button class="step" data-step="look"><span>2</span> Choose a voice</button>
+  <button class="step" data-step="listen"><span>3</span> Listen</button>
+  <button class="step" data-step="keep"><span>4</span> Keep a recording</button>
+</nav>
+
+<main id="main">
+
+  <!-- -------------------------------------------------- 1. give it something -->
+  <section class="panel" id="panel-give">
+    <div class="drop" id="drop">
+      <div class="drop-inner">
+        <div class="drop-icon">📄</div>
+        <h2>Drop something to be read to you</h2>
+        <p>A PDF, a Word file, a text file, a web page saved from your browser, or an
+           e-book. Nothing leaves this computer.</p>
+        <button class="btn primary" id="browseBtn">Choose a file</button>
+        <input type="file" id="fileInput" accept=".txt,.md,.pdf,.docx,.html,.htm,.epub,.csv,.json,.log,.rst" hidden>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <h3>Or paste some words</h3>
+        <p class="muted">Anything at all — an email, a report, a recipe.</p>
+        <textarea id="pasteBox" rows="6" placeholder="Paste or type here…"></textarea>
+        <div class="row" style="margin-top:10px">
+          <button class="btn" id="pasteBtn">Read what I pasted</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Or a web address</h3>
+        <p class="muted">The words of the page are fetched and read out. Pages that load
+          their text with scripts may have nothing to read.</p>
+        <div class="field">
+          <input type="text" id="urlBox" placeholder="https://example.com/article">
+        </div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn" id="urlBtn">Fetch and read that page</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Nothing to hand?</h3>
+      <p class="muted">These come with the app and are made to show the voice off.</p>
+      <div class="sample-list" id="sampleList"></div>
+    </div>
+  </section>
+
+  <!-- ----------------------------------------------------- 2. choose a voice -->
+  <section class="panel" id="panel-look" hidden>
+    <div class="card">
+      <div class="label" id="sourceLabel">Ready to read</div>
+      <h2 id="docTitle">your document</h2>
+      <p class="muted" id="docNote"></p>
+      <div class="stats-row" id="stats"></div>
+    </div>
+
+    <div class="card highlight">
+      <div class="label">The voice</div>
+      <h3 id="engineHeadline">A voice on this computer</h3>
+      <p class="muted" id="engineNote"></p>
+      <div class="voice-row">
+        <div class="field">
+          <label for="voiceSelect">Which voice?</label>
+          <select id="voiceSelect"></select>
+        </div>
+        <div class="field">
+          <label for="rateRange">Speed <span class="rate-label" id="rateLabel"></span></label>
+          <input type="range" id="rateRange" min="-10" max="10" step="1" value="0">
+        </div>
+        <div class="field" id="volumeField" hidden>
+          <label for="volumeRange">Volume <span class="rate-label" id="volumeLabel">100%</span></label>
+          <input type="range" id="volumeRange" min="0" max="100" step="5" value="100">
+        </div>
+      </div>
+      <div class="row" style="margin-top:16px">
+        <button class="btn primary big" id="playBtn">▶ Read it to me</button>
+        <button class="btn" id="recordBtn">Record it as a file</button>
+        <button class="btn ghost" id="shortenBtn">Read me the short version</button>
+      </div>
+      <p class="muted" id="shortenNote" style="margin-top:12px"></p>
+    </div>
+
+    <div class="card">
+      <h3>The words, cut into sentences</h3>
+      <p class="muted">Each sentence is spoken on its own, so the page can follow along.
+        Click a sentence to start from there.</p>
+      <div class="reading-text" id="previewText"></div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------------- 3. listen -->
+  <section class="panel" id="panel-listen" hidden>
+    <div class="player">
+      <button class="btn play" id="pauseBtn">⏸ Pause</button>
+      <button class="btn" id="skipBtn">⏭ Next</button>
+      <button class="btn ghost" id="stopBtn">■ Stop</button>
+      <div class="now">
+        <b id="nowSentence">…</b>
+        <span id="nowCount">sentence 0 of 0</span>
+      </div>
+      <div class="bar" style="width:120px"><span id="listenBar"></span></div>
+    </div>
+
+    <div class="card">
+      <h3 id="listenTitle">Reading to you</h3>
+      <p class="muted" id="listenSub"></p>
+      <div class="reading-text" id="listenText"></div>
+    </div>
+
+    <div class="card">
+      <h3>When you are done</h3>
+      <div class="row">
+        <button class="btn" id="recordFromListenBtn">Record it as a file instead</button>
+        <button class="btn ghost" id="backToLookBtn">← Change the voice</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- --------------------------------------------------------------- 4. keep -->
+  <section class="panel" id="panel-keep" hidden>
+    <div class="card" id="recordingCard" hidden>
+      <div class="label">Your recording</div>
+      <h2 id="recordingTitle">Making the recording…</h2>
+      <p class="muted" id="recordingNote"></p>
+      <div class="bar big-bar"><span id="recordBar"></span></div>
+      <div class="log" id="recordLog"></div>
+      <div class="row" style="margin-top:14px">
+        <button class="btn primary" id="downloadBtn" hidden>Download it</button>
+        <button class="btn ghost" id="revealBtn">Show me the folder</button>
+        <button class="btn ghost" id="backToLookBtn2">← Back</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Things you have read</h3>
+      <p class="muted">Recordings are kept in nanoSay's own folder and cleared out after a
+        week, so they cannot quietly fill your disk.</p>
+      <div class="sample-list" id="libraryList"></div>
+    </div>
+  </section>
+</main>
+
+<div class="backdrop" id="settingsModal">
+  <div class="modal">
+    <div class="modal-head"><h2>Settings</h2>
+      <button class="btn ghost small" data-close="settingsModal">✕</button></div>
+    <div class="modal-body">
+      <div class="group">
+        <h3>The voice on this computer</h3>
+        <p class="help" id="speechInfo">…</p>
+        <div class="voice-card" id="voiceList"></div>
+      </div>
+      <div class="group">
+        <h3>The AI next door (optional)</h3>
+        <p class="help">“Read me the short version” asks nanoLaama — the AI on your own
+          computer — to shorten a long text first. Nothing is sent anywhere except to
+          that address, on this machine.</p>
+        <div class="field">
+          <label for="addressInput">Where nanoLaama lives</label>
+          <input type="text" id="addressInput" placeholder="http://127.0.0.1:8760">
+          <div class="hint" id="laamaState">checking…</div>
+        </div>
+      </div>
+      <div class="group">
+        <h3>Where your recordings live</h3>
+        <p class="help" id="folderInfo">…</p>
+        <div class="field">
+          <label for="keepDays">Clear out recordings after (days)</label>
+          <input type="number" id="keepDays" min="1" max="90" step="1">
+        </div>
+        <div class="row">
+          <button class="btn small" id="revealFolderBtn">Open that folder</button>
+          <button class="btn small" id="forgetBtn">Forget the list</button>
+          <button class="btn small" id="clearBtn">Throw away the recordings</button>
+        </div>
+        <div class="log" id="tidyLog"></div>
+      </div>
+      <div class="group">
+        <h3>Other nano apps</h3>
+        <p class="help" id="siblingsInfo">…</p>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn primary" data-close="settingsModal">Close</button></div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+<script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: python ${{ matrix.python }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ["3.9", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      # Windows runners have System.Speech and macOS runners have `say`, so the
+      # voice tests run for real here. Linux needs eSpeak installing first.
+      - name: Run the test suite
+        run: python -m unittest discover tests -v
+
+      - name: Show the voices on this machine
+        run: python -m nanosay doctor
+
+      - name: Install a voice on Linux, so recording is tested too
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y espeak-ng
+
+      - name: Run the tests again, now with a voice
+        run: python -m unittest discover tests -v
