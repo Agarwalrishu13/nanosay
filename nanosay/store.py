@@ -29,6 +29,8 @@ DEFAULT_SETTINGS = {
     "shorten_first": False,   # ask nanoLaama for a short version before reading
     "address": "http://127.0.0.1:8760",   # where nanoLaama lives, if it is running
     "keep_days": KEEP_OUTPUTS_DAYS,
+    # Where reading stopped in each document, so it can resume: {source: sentence index}
+    "positions": {},
 }
 
 
@@ -98,6 +100,8 @@ def save_settings(patch: dict) -> dict:
                 continue
         elif isinstance(value, str):
             settings[key] = value.strip()[:200]
+        elif isinstance(DEFAULT_SETTINGS[key], dict):
+            settings[key] = value if isinstance(value, dict) else {}
     with _lock:
         tmp = _settings_path().with_suffix(".tmp")
         tmp.write_text(json.dumps(settings, indent=2), encoding="utf-8")
@@ -226,3 +230,31 @@ def free_space_mb() -> int:
         return shutil.disk_usage(str(data_dir())).free // (1024 * 1024)
     except OSError:
         return -1
+
+
+MAX_POSITIONS = 40  # a whole library would only grow; the latest stays
+
+
+def save_position(source: str, index: int) -> int:
+    """Remember the sentence where reading stopped (0 clears it)."""
+    key = str(source or "").strip()
+    if not key:
+        return 0
+    try:
+        at = max(0, int(index))
+    except (TypeError, ValueError):
+        return 0
+    positions = dict(settings()["positions"])
+    positions.pop(key, None)
+    if at > 0:
+        positions[key] = at
+    save_settings({"positions": dict(list(positions.items())[-MAX_POSITIONS:])})
+    return at
+
+
+def position_of(source: str) -> int:
+    """The sentence where reading last stopped in this document; 0 = from the top."""
+    key = str(source or "").strip()
+    if not key:
+        return 0
+    return int(settings()["positions"].get(key, 0))

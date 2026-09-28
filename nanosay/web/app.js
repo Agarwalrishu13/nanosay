@@ -170,6 +170,7 @@ function describeRate() {
 function showDocument(doc) {
   app.doc = doc;
   $('docTitle').textContent = doc.title || doc.name || 'your document';
+  checkPosition();
   $('sourceLabel').textContent = doc.kind === 'words' ? 'Words you pasted'
     : doc.kind === 'page' ? 'Fetched from the web'
     : doc.kind === 'sample' ? 'An example that came with nanoSay' : 'Ready to read';
@@ -240,6 +241,7 @@ async function startFrom(index) {
 
 async function read(sentences, offset) {
   try {
+    try { await post('/api/position', { source: sourceKey(), index: offset || 0 }); } catch (e) {}
     const answer = await post('/api/read', {
       sentences,
       voice: chosenVoice(),
@@ -284,18 +286,22 @@ async function ask() {
   if (payload.state === 'reading' || payload.state === 'paused') {
     moveHighlight(where, $('listenText'));
   }
-  if (payload.state === 'reading') { poll(); return; }
+  if (payload.state === 'reading') {
+    post('/api/position', { source: sourceKey(), index: where + 1 }).catch(() => {});
+    poll(); return;
+  }
 
   app.listening = false;
   if (payload.state === 'done') {
     moveHighlight((app.offset || 0) + (payload.total || 0), $('listenText'));
     $('pauseBtn').textContent = '▶ Read again';
+    post('/api/position', { source: sourceKey(), index: 0 }).catch(() => {});
     toast('Finished reading.', 'good');
   } else if (payload.state === 'paused') {
     $('pauseBtn').textContent = '▶ Carry on';
   } else if (payload.state === 'stopped') {
     $('pauseBtn').textContent = '▶ Read again';
-    toast('Stopped where it was.', 'good');
+    toast('Stopped where it was. It will offer to carry on from here next time.', 'good');
   } else if (payload.state === 'error') {
     toast(payload.error || 'The voice stopped.', 'bad');
   }
@@ -684,3 +690,24 @@ async function saveVoice() {
 }
 
 main();
+
+function sourceKey() {
+  return app.doc.path || app.doc.address || ('words:' + (app.doc.title || app.doc.name || ''));
+}
+
+// Offer to pick up where the last reading stopped.
+async function checkPosition() {
+  const btn = $('continueBtn');
+  btn.hidden = true;
+  const key = sourceKey();
+  if (!key || !app.doc.sentences || !app.doc.sentences.length) return;
+  try {
+    const data = await get('/api/position?source=' + encodeURIComponent(key));
+    const at = data.index || 0;
+    if (at > 0 && at < app.doc.sentences.length) {
+      btn.textContent = '▶ Continue from sentence ' + (at + 1);
+      btn.hidden = false;
+      btn.onclick = () => readFrom(at);
+    }
+  } catch (error) { /* a nicety, never a blocker */ }
+}

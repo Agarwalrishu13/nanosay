@@ -622,3 +622,30 @@ class TestApi(ServerCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class PositionMemoryTests(unittest.TestCase):
+    """Resume where you stopped: the sentence index is remembered per document."""
+
+    def test_a_stopped_index_is_remembered_and_cleared(self):
+        self.assertEqual(store.position_of("doc-one"), 0)
+        store.save_position("doc-one", 41)
+        self.assertEqual(store.position_of("doc-one"), 41)
+        store.save_position("doc-one", 0)  # finished: forget it
+        self.assertEqual(store.position_of("doc-one"), 0)
+
+    def test_negative_and_nonsense_are_ignored(self):
+        store.save_position("doc-two", -3)
+        self.assertEqual(store.position_of("doc-two"), 0)
+        store.save_position("doc-two", "not a number")
+        self.assertEqual(store.position_of("doc-two"), 0)
+
+    def test_an_empty_source_is_never_remembered(self):
+        store.save_position("", 12)
+        store.save_position(None, 12)
+        self.assertEqual(store.position_of(""), 0)
+
+    def test_the_position_survives_a_reload(self):
+        store.save_position("doc-three", 17)
+        again = store.load_settings()
+        self.assertEqual(again["positions"]["doc-three"], 17)

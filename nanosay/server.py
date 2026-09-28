@@ -273,6 +273,16 @@ def create_app() -> App:
         })
 
     # ----------------------------------------------------------------- samples
+    @app.get("/api/position")
+    def get_position(request):
+        return Json({"ok": True, "index": store.position_of(request.q("source", ""))})
+
+    @app.post("/api/position")
+    def set_position(request):
+        payload = request.json() or {}
+        saved = store.save_position(str(payload.get("source") or ""), payload.get("index", 0))
+        return Json({"ok": True, "index": saved})
+
     @app.get("/api/samples")
     def samples(_request):
         return Json({"samples": [

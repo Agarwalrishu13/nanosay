@@ -12,7 +12,7 @@ save the whole thing as a recording you can play anywhere.
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![python](https://img.shields.io/badge/python-3.9+-58a6ff.svg)]()
 [![dependencies](https://img.shields.io/badge/required%20deps-0-f0883e.svg)]()
-[![tests](https://img.shields.io/badge/tests-66%20passing-3ddc97.svg)]()
+[![tests](https://img.shields.io/badge/tests-70%20passing-3ddc97.svg)]()
 
 </div>
 
@@ -20,6 +20,12 @@ save the whole thing as a recording you can play anywhere.
 
 > **Part of [the nano family](https://github.com/Agarwalrishu13/nano)** — eleven offline-first apps for people who do not code. This is the map of the whole project.
 
+
+## What's new in 0.2
+
+- **Carry on where you stopped.** Stop a reading, close the app, come back
+  tomorrow — nanoSay remembers the sentence and offers to continue from there.
+  Finishing a document clears it.
 
 ## What this is, in one paragraph
 
