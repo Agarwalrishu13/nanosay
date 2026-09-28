@@ -27,6 +27,15 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 _TMP = tempfile.mkdtemp(prefix="nanosay-tests-")
 os.environ["NANOSAY_HOME"] = _TMP
 
+# A Windows console on a legacy code page cannot print every character the app
+# can say. The suite loses characters rather than crashing on them.
+import sys as _sys
+for _stream in (_sys.stdout, _sys.stderr):
+    try:
+        _stream.reconfigure(errors="replace")  # type: ignore[union-attr]
+    except Exception:
+        pass
+
 from nanosay import jobs, reading, reader, server, shorten, store, voices  # noqa: E402
 from nanosay.httpbase import free_port  # noqa: E402
 from nanosay.server import create_app  # noqa: E402
@@ -318,6 +327,15 @@ class TestVoices(unittest.TestCase):
 class TestRecordingForReal(unittest.TestCase):
     """Records a few words to a file. Silent: SAPI writing to a file never
     reaches the speakers, and this is the same code path the button uses."""
+
+    def setUp(self):
+        # eSpeak and speech-dispatcher can read aloud but cannot record; the
+        # app says so honestly, and these tests only run where saving works.
+        probe = store.free_name("probe.wav")
+        can_record, why = voices.save_to_wav("Probe.", probe, "", 0)
+        probe.unlink(missing_ok=True)
+        if not can_record:
+            self.skipTest(why)
 
     def test_a_short_recording_really_is_a_recording(self):
         target = store.free_name("unit-test.wav")
