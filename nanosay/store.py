@@ -244,7 +244,7 @@ def save_position(source: str, index: int) -> int:
         at = max(0, int(index))
     except (TypeError, ValueError):
         return 0
-    positions = dict(settings()["positions"])
+    positions = dict(load_settings()["positions"])
     positions.pop(key, None)
     if at > 0:
         positions[key] = at
@@ -257,4 +257,4 @@ def position_of(source: str) -> int:
     key = str(source or "").strip()
     if not key:
         return 0
-    return int(settings()["positions"].get(key, 0))
+    return int(load_settings()["positions"].get(key, 0))
